@@ -54,10 +54,11 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+The item that reaches suggest_outfit is the same item search_listings found
+For 5 matching queries, the id of session["selected_item"] is the same id referenced in the fit card's caption  5 of 5
 
 **Why this target:**
-
+ I picked 5 of 5 because passing the selected item from search_listings into suggest_outfit is just my own code copying one value from one place to another  nothing random or model-driven happens in between. If it works, it should work every time, not just most of the time.
 
 
 ---
@@ -77,8 +78,12 @@ Given a query that matches no listings, the agent stops before calling
 
 
 
-**Why this target:**
+The fit card always states the item's price.
+For 5 different items run through create_fit_card, the generated caption mentions the price exactly once — 4 of 5 tries.
 
+
+**Why this target:**
+I picked 4 of 5 instead of 5 of 5 because this tool calls the model, and the model's wording isn't fully predictable. Even with a clear instruction to mention the price, there's a real chance it gets paraphrased out or dropped in one generation, so I'm leaving room for that rather than claiming certainty I don't actually have.
 
 
 ---
@@ -92,10 +97,12 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
+search_listings correctly filters out any listing over the price ceiling.
+For 5 queries with a max_price set, every returned listing's price is less than or equal to that ceiling — 5 of 5 tries.
 
 
 **Why this target:**
-
+I picked 5 of 5 because search_listings doesn't call the model,  it's my own code doing a plain number comparison. Like criterion 3, this should work every single time if the code is correct, not just most of the time.
 
 
 ---
