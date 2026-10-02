@@ -59,24 +59,24 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches the listings data for items matching keywords in a description, optionally filtered by size and a maximum price.
+- **Inputs:** description (str, required), size (str, optional), max_price (float, optional)
+- **Returns:** A list of listing dicts, best match first. Each dict has: id, title, description, category, style_tags (list), size, condition, price (float), colors (list), brand (str or None), platform
+- **When it has nothing:** Returns an empty list [] — never None, never an exception.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Given a thrifted item and the user's wardrobe, suggest one or two outfits.
+- **Inputs:** new_item(dict, required),  wardrobe(dict, required)
+- **Returns:** A non-empty string containing outfit suggestions.
+- **When it has nothing:** With an empty wardrobe, returns general styling advice rather than raising an error or returning an empty string
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Writes a short caption someone would actually post about the find.
+- **Inputs:** outfit (str, required), new_item (dict, required)
+- **Returns:** A two-to-four sentence caption that reads like a real social post, mentioning the item, its price, and platform once each, and specific about the vibe.
+- **When it has nothing:** if outfit is empty or whitespace, return a descriptive message instead of raising an error
 
 ---
 
@@ -93,13 +93,15 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If search_listings returns an empty list, put a message in the session and stop. Otherwise, take the first result and continue to suggest_outfit
 
 **Where it lives:** `agent.py::run_agent`
 
 **How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+ Regex / simple string splitting — looking for a `$` followed by digits to pull out `max_price`, and a "size X" pattern to pull out `size`; whatever text remains becomes the `description`. Chosen over asking the model because it's free, instant, and predictable, and the test queries follow a regular enough format for it to work reliably.
 
 **What moves through the session:** <!-- which fields, in what order -->
+query` (the raw user input) → `parsed` (description/size/max_price extracted from it) → `search_results` (everything `search_listings` returned) → `selected_item` (the one chosen to move forward) → `wardrobe` (passed in at the start) → `outfit_suggestion` (from `suggest_outfit`) → `fit_card` (from `create_fit_card`) → `error` (set if the run stopped early). 
 
 ---
 
@@ -109,32 +111,34 @@
 
      1. One FULL query and its output, pasted as text.
      2. Your three per-tool terminal tests — the command and what it printed. -->
+     ## Sample Run
 
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask "vintage graphic tee under $30"
 
+  The planning loop isn't built yet — see the TODO in agent.py.
+
+0 model calls this session
 ```
 
 **The three tools, tested one at a time**
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+[]
+```
+
+```
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
 
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
 
 ```
-
-```
-$ python -c "from tools import create_fit_card; ..."
-
-```
-
----
 
 ## How I Used AI
 
