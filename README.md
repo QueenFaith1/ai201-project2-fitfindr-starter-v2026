@@ -172,6 +172,16 @@ Still not over scoring these vintage Levi's 501 jeans on depop for just $38.0! T
 - *What came back:*
 - *What I changed:*
 
+Moment 1: Query Parsing Strategy, 
+ *What I asked for* Should I parse the user's query with regex to extract price and size, or pass the whole thing to Claude and ask it to extract the fields? 
+ *What came back:* Claude suggested regex would be faster and more predictable since the format is consistent ($30, size M, etc.), and I wouldn't want to burn a model call on something deterministic.
+*What I changed* I went with simple regex splitting instead of LLM based parsing  saves time and tokens, works reliably for the expected input format.
+
+Moment 2: Acceptance Criteria, the state criterion* 
+*What I asked for:* I asked Claude to help me understand what "something about state" meant for criterion 3, since I didn't understand what I was being asked to check.  
+*What came back:* Claude explained it as checking whether the item `search_listings` finds is the exact same item that reaches `suggest_outfit` comparing the `id` in `session["selected_item"]` against what the fit card actually references. 
+ *What I changed:* I wrote the criterion as "for 5 matching queries, the id of session['selected_item'] matches the id referenced in the fit card 5 of 5 tries," and set the target to 5/5 since it's my own code passing a value, not something modeldriven that could vary.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
