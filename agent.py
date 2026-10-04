@@ -50,6 +50,61 @@ def new_session(query: str, wardrobe: dict) -> dict:
 # ── planning loop ─────────────────────────────────────────────────────────────
 
 def run_agent(query: str, wardrobe: dict) -> dict:
+    session = new_session(query, wardrobe)
+
+    # Parse the query: pull out max_price and size, rest becomes description
+    import re
+
+    price_match = re.search(r"\$(\d+(?:\.\d+)?)", query)
+    max_price = float(price_match.group(1)) if price_match else None
+
+    size_match = re.search(r"\bsize\s+(\w+)\b", query, re.IGNORECASE)
+    size = size_match.group(1) if size_match else None
+
+    description = query
+    if price_match:
+        description = description.replace(price_match.group(0), "")
+    if size_match:
+        description = description.replace(size_match.group(0), "")
+    description = description.replace("under", "").strip()
+
+    session["parsed"] = {
+        "description": description,
+        "size": size,
+        "max_price": max_price,
+    }
+
+    # Step 1: search
+    results = search_listings(
+        description=description, size=size, max_price=max_price
+    )
+    session["search_results"] = results
+
+    # THE BRANCH
+    if not results:
+        session["error"] = (
+            f"No listings matched '{description}'"
+            f"{f' under ${max_price}' if max_price else ''}"
+            f"{f' in size {size}' if size else ''}. "
+            f"Try a higher price, a different size, or fewer/different "
+            f"keywords in your description."
+        )
+        return session
+
+    # Step 2: pick the top match
+    session["selected_item"] = results[0]
+
+    # Step 3: suggest an outfit
+    session["outfit_suggestion"] = suggest_outfit(
+        session["selected_item"], wardrobe
+    )
+
+    # Step 4: write the caption
+    session["fit_card"] = create_fit_card(
+        session["outfit_suggestion"], session["selected_item"]
+    )
+
+    return session
     """
     Run the loop once and return the finished session.
 
