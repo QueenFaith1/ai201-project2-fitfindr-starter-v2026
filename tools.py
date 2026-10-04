@@ -32,6 +32,34 @@ def search_listings(
     size: str | None = None,
     max_price: float | None = None,
 ) -> list[dict]:
+    listings = load_listings()
+    results = []
+
+    for item in listings:
+        # Price filter — skip if over budget
+        if max_price is not None and item["price"] > max_price:
+            continue
+
+        # Size filter — case-insensitive, but match as a whole token,
+        # not a loose substring (avoids "S" matching "US 9")
+        if size is not None:
+            item_size_tokens = item["size"].lower().replace("/", " ").split()
+            if size.lower() not in item_size_tokens:
+                continue
+
+        # Score by keyword overlap between description and the item's
+        # title + style_tags + category
+        desc_words = set(description.lower().split())
+        item_words = set(item["title"].lower().split())
+        item_words.update(tag.lower() for tag in item["style_tags"])
+        item_words.add(item["category"].lower())
+
+        score = len(desc_words & item_words)
+        if score > 0:
+            results.append((score, item))
+
+    results.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for score, item in results[:config.SEARCH_RESULT_LIMIT]]
     """
     Search the listings data for items matching a description, and optionally a
     size and a price ceiling.
@@ -85,6 +113,33 @@ def search_listings(
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
 
 def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
+    items = wardrobe.get("items", [])
+
+    if not items:
+        prompt = (
+            f"Someone is considering buying this item:\n"
+            f"{new_item['title']} — {new_item['category']}, "
+            f"colors: {', '.join(new_item['colors'])}, "
+            f"style: {', '.join(new_item['style_tags'])}\n\n"
+            f"They don't have a wardrobe entered yet. Give general styling "
+            f"advice for how to wear this piece — what to pair it with."
+        )
+    else:
+        wardrobe_lines = "\n".join(
+            f"- {i['name']} ({i['category']}, {', '.join(i['colors'])})"
+            for i in items
+        )
+        prompt = (
+            f"Someone is considering buying this item:\n"
+            f"{new_item['title']} — {new_item['category']}, "
+            f"colors: {', '.join(new_item['colors'])}\n\n"
+            f"Their wardrobe:\n{wardrobe_lines}\n\n"
+            f"Suggest one or two specific outfits combining this new item "
+            f"with pieces they already own. Name the actual pieces."
+        )
+
+    return generate(prompt)
+
     """
     Given a thrifted item and the user's wardrobe, suggest one or two outfits.
 
@@ -97,9 +152,7 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
                   **It may be empty.** Handle that.
 
     Returns:
-        A non-empty string with outfit suggestions.
-        With an empty wardrobe, return general styling advice rather than
-        raising or returning "". Unit 4 has you trigger the empty wardrobe on
+        "". Unit 4 has you trigger the empty wardrobe on
         purpose, so decide now what it should do.
 
     TODO:
@@ -119,6 +172,25 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
 
 def create_fit_card(outfit: str, new_item: dict) -> str:
+    if not outfit or not outfit.strip():
+        return (
+            f"Couldn't generate a caption — no outfit suggestion was "
+            f"available for {new_item.get('title', 'this item')}."
+        )
+
+    prompt = (
+        f"Write a short caption (2-4 sentences) someone would actually post "
+        f"on social media about this thrift find. It should read like a real "
+        f"post, not a product listing.\n\n"
+        f"Item: {new_item['title']}\n"
+        f"Price: ${new_item['price']}\n"
+        f"Platform: {new_item['platform']}\n"
+        f"Outfit idea: {outfit}\n\n"
+        f"Mention the item, price, and platform each exactly once. Be "
+        f"specific about the vibe."
+    )
+
+    return generate(prompt)
     """
     Write a short caption someone would actually post about the find.
 

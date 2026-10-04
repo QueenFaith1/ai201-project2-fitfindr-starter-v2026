@@ -127,16 +127,27 @@ $ python app.py ask "vintage graphic tee under $30"
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-[]
+[{'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'price': 24.0, 'platform': 'depop', ...}, {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'price': 18.0, 'platform': 'depop', ...}, {'id': 'lst_015', 'title': 'Vintage Graphic Hoodie — Faded Black', 'price': 26.0, 'platform': 'depop', ...}, {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'price': 19.0, 'platform': 'depop', ...}]
+```
 ```
 
 ```
 $ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Here are two specific outfit suggestions incorporating the Vintage Levi's 501 Jeans into their existing wardrobe:
+
+### Outfit 1: Casual & Classic
+* Top: White ribbed tank top
+* Outerwear: Vintage black denim jacket
+* Bottoms: Vintage Levi's 501 Jeans (Medium Wash)
+* Shoes: Chunky white sneakers
+* Accessories: Black crossbody bag
+[... full output ...]
 
 ```
 
 ```
 $ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Still not over scoring these vintage Levi's 501 jeans on depop for just $38.0! They have that perfectly worn-in medium wash and the exact relaxed 90s vibe I've been hunting for. Honestly, I'm just living in these with my favorite white sneakers all spring.
 
 ```
 
