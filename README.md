@@ -330,25 +330,37 @@ fields, confirming the swap didn't change behavior, only how the call is routed.
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** My diagnosis found that criterion 4's "before" test only ran the same item (the $24 Graphic Tee) 5 times, even though the criterion itself says "for 5 **different items**." I rewrote `scenarios.py` to replace
+that one repeated scenario with 5 separate scenarios, each targeting a different real listing: the Graphic Tee ($24, no brand), Vintage Levi's 501
+Jeans ($38, brand: Levi's), a cropped Denim Jacket ($42, brand: Wrangler), a Y2K Baby Tee ($18, no brand), and a Knit Cardigan ($35, no brand), a real mix of prices and brand presence, not just repeating one easy input.
 
-**Which failure it was meant to fix:**
+
+**Which failure it was meant to fix:** Not a failure exactly,  my diagnosis flagged that criterion 4's original "MET" result was weaker evidence than it looked, since it only proved the model could repeat itself on one clean item, not that it reliably handles price-mentioning across varied items and data shapes (including items with a missing `brand` field, which the tool's docstring explicitly warns is common).
+
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 4. Fit card mentions price — item 1 (Graphic Tee, $24) | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions price — item 2 (Levi's 501, $38) | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions price — item 3 (Denim Jacket, $42) | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions price — item 4 (Y2K Baby Tee, $18) | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions price — item 5 (Knit Cardigan, $35) | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Did it help, and how do I know:**
+All other criteria (1, 2, 3, 5) were re-run in the same `--label after` pass and held at their previous results unaffected, since the only change was to criterion 4's test scenarios, not the agent itself.
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+**Real output, item 2 (Levi's 501 Jeans), try 1**, produced by `run_eval.py::main` → `agent.py::run_agent` → `tools.py::create_fit_card`:
 
+```
+Query: vintage Levi's 501 jeans (example wardrobe)
+
+selected_item: Vintage Levi's 501 Jeans — Medium Wash ($38.0, depop).
+
+Fit card: scored these vintage levi's 501 jeans on depop for $38 and i'm never taking them off. the medium wash gives them the exact relaxed 90s vibe I've been looking for.
+```
+
+**Did it help, and how do I know:**  Yes, this wasn't a case of fixing a bug, but of closing a real gap between what my criterion claimed to test and what my scenario actually tested. Across 5 genuinely different items (varied prices, varied brand presence), the fit card mentioned the price correctly 25 out of 25 times. The "MET (5/5)" verdict for criterion 4 is now backed by real variety, not one easy repeated case, so I trust this result more than the "before" one, even though both say the same thing on paper.
 
 
 ---

@@ -44,14 +44,41 @@ SCENARIOS = [
         "wardrobe": "example",
         "criterion": 3,
     },
-    {
-        # Criterion 4 — fit card mentions price. Run multiple times to check
-        # consistency across 5 tries (run_eval.py handles the 5x repetition).
-        "name": "fit card mentions price",
+
+        {
+        # Criterion 4 — fit card mentions price. 5 DIFFERENT items, not
+        # the same one repeated, since the criterion specifically says
+        # "5 different items." Each query targets a different listing.
+        "name": "fit card mentions price — item 1",
         "query": "vintage graphic tee under $30",
         "wardrobe": "example",
         "criterion": 4,
     },
+    {
+        "name": "fit card mentions price — item 2",
+        "query": "vintage Levi's 501 jeans",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        "name": "fit card mentions price — item 3",
+        "query": "cropped denim jacket light wash",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        "name": "fit card mentions price — item 4",
+        "query": "Y2K baby tee butterfly",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        "name": "fit card mentions price — item 5",
+        "query": "chunky brown knit cardigan",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+
     {
         # Criterion 5 — price ceiling respected. max_price=30 is baked into
         # the query; checking every result stays at or under it.
