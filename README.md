@@ -41,7 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
-
+FitFindr takes a plain language thrifting query  like "vintage graphic tee under $30" and searches a mock Depop/Poshmark/thredUp listings dataset for a match. If something matches, it picks the best result, suggests one or two outfits combining it with the user's existing wardrobe, and writes a short social media style caption for the find. If nothing matches, it stops before the later steps and tells the user what to change the price, size, or keywords instead of guessing.
 
 ---
 
@@ -181,6 +181,12 @@ Moment 2: Acceptance Criteria, the state criterion*
 *What I asked for:* I asked Claude to help me understand what "something about state" meant for criterion 3, since I didn't understand what I was being asked to check.  
 *What came back:* Claude explained it as checking whether the item `search_listings` finds is the exact same item that reaches `suggest_outfit` comparing the `id` in `session["selected_item"]` against what the fit card actually references. 
  *What I changed:* I wrote the criterion as "for 5 matching queries, the id of session['selected_item'] matches the id referenced in the fit card 5 of 5 tries," and set the target to 5/5 since it's my own code passing a value, not something modeldriven that could vary.
+
+ 
+Moment 3: Diagnosing the trace not printing
+*What I asked for:* Why `--trace` kept saying "You haven't added trace.step() calls yet" even after I'd added them to `agent.py`.
+*What came back:* Claude had me add a plain `print()` statement directly inside `run_agent()` to confirm the function was actually being reached with my edits, which revealed the file had an old, unsaved/stale version running.
+*What I changed:* Once I saved properly and the print confirmed the real code was executing, the trace worked. I also used this same moment to find and remove duplicate dead code left over from an earlier edit, in the same file.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
@@ -366,6 +372,19 @@ Fit card: scored these vintage levi's 501 jeans on depop for $38 and i'm never t
 ---
 
 ## What's Still Broken
+
+## What's Still Broken
+
+Nothing was missed against any target, so there's no failed criterion to fix,  but a few honest gaps remain, worth naming rather than pretending
+everything is airtight.
+
+**Criterion 1's target (4 of 5) was never actually tested against a hardcase.** Every scenario I ran used clean, wellformed queries that matched
+easily. I never tried a deliberately awkward phrasing (a misspelled item name, unusual word order) to see if the 4-of-5 buffer is doing real work or if it's untested slack. I'd want to add a few messier queries to find out.
+
+**The `>>> TRACE TEST` debug line is still in `agent.py`.** I added it while debugging why `--trace` wasn't printing anything, and never removed it. It's harmless and it doesn't affect correctness but it clutters every run's output and shouldn't be in submitted code. 
+
+**I only moved one tool (`search_listings`) onto MCP, not more.** The stretch feature for a second MCP tool wasn't attempted . I focused my time
+on testing rigor instead (the criterion 4 fix) rather than adding more surface area.
 
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
