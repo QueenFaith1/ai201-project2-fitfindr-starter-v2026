@@ -278,9 +278,44 @@ behaved differently afterwards. If the rewire didn't work, say exactly where it
 broke — the error text and the last thing that worked. That earns the point in
 full. -->
 
+## Loop Trace
 
+**Happy path**
 
----
+```
+$ python app.py ask "vintage graphic tee under $30" --trace
+
+[1] parse_query
+      in:  dict with keys: query
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Graphic Tee — 2003 Tour Bootleg Style, Y2K Baby Tee — Butterfly Print, Vintage Graphic Hoodie — Faded Black … +7 more
+[3] select_item
+      out: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+[4] suggest_outfit
+      in:  dict with keys: item
+      out: Here are two specific outfit combinations using the Graphic Tee...
+[5] create_fit_card
+      out: Still pinching myself over finding this sick 2003 tour bootleg tee...
+```
+
+**Empty search**
+
+```
+$ python app.py ask "designer ballgown size XXS under $5" --trace
+
+[1] parse_query
+      in:  dict with keys: query
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+[3] branch
+      →    empty results, stopping before suggest_outfit
+
+      **On the MCP move:** "search_listings"  was moved onto an MCP server ("mcp_server.py"), registered with a typed schema and a description written for a caller who can't see the implementation. "run_agent()" now calls it through "mcp_client.call_tool("search_listings", {...})" instead of importing and calling the function directly. The results coming back are identical in shape to the direct call version. same listing dicts, same fields confirming the swap didn't change behavior, only how the call is routed.
+
 
 ## The Improvement
 

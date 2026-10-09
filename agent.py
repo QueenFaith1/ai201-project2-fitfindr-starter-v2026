@@ -49,7 +49,12 @@ def new_session(query: str, wardrobe: dict) -> dict:
 
 # ── planning loop ─────────────────────────────────────────────────────────────
 
+
 def run_agent(query: str, wardrobe: dict) -> dict:
+    from trace import step, start_trace
+
+    start_trace()
+    print(">>> TRACE TEST: inside run_agent, about to call step()")
     session = new_session(query, wardrobe)
 
     # Parse the query: pull out max_price and size, rest becomes description
@@ -73,8 +78,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         "size": size,
         "max_price": max_price,
     }
-
-   
+    step("parse_query", inputs={"query": query}, returned=session["parsed"])
 
     # Step 1: search
     from mcp_client import call_tool
@@ -86,6 +90,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     })
 
     session["search_results"] = results
+    step("search_listings (via MCP)", inputs=session["parsed"], returned=results)
 
     # THE BRANCH
     if not results:
@@ -96,22 +101,26 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             f"Try a higher price, a different size, or fewer/different "
             f"keywords in your description."
         )
+        step("branch", note="empty results, stopping before suggest_outfit")
         return session
 
     # Step 2: pick the top match
     session["selected_item"] = results[0]
+    step("select_item", returned=session["selected_item"])
 
- 
-        # Step 3: suggest an outfit
+    # Step 3: suggest an outfit
     try:
         session["outfit_suggestion"] = suggest_outfit(
             session["selected_item"], wardrobe
         )
+        step("suggest_outfit", inputs={"item": session["selected_item"]["title"]},
+             returned=session["outfit_suggestion"])
     except ModelUnavailable as exc:
         session["error"] = (
             f"Couldn't reach the model to suggest an outfit: {exc} "
             f"Try again in a moment, or check your API key."
         )
+        step("suggest_outfit", note=f"ModelUnavailable: {exc}")
         return session
 
     # Step 4: write the caption
@@ -119,16 +128,18 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         session["fit_card"] = create_fit_card(
             session["outfit_suggestion"], session["selected_item"]
         )
+        step("create_fit_card", returned=session["fit_card"])
     except ModelUnavailable as exc:
         session["error"] = (
             f"Couldn't reach the model to write the caption: {exc} "
             f"Try again in a moment, or check your API key."
         )
+        step("create_fit_card", note=f"ModelUnavailable: {exc}")
         return session
 
     return session
+   
 
-  
 # ── running it directly ───────────────────────────────────────────────────────
 
 def _show(session: dict) -> None:
