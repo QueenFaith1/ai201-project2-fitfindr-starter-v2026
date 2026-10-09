@@ -101,17 +101,33 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     # Step 2: pick the top match
     session["selected_item"] = results[0]
 
-    # Step 3: suggest an outfit
-    session["outfit_suggestion"] = suggest_outfit(
-        session["selected_item"], wardrobe
-    )
+ 
+        # Step 3: suggest an outfit
+    try:
+        session["outfit_suggestion"] = suggest_outfit(
+            session["selected_item"], wardrobe
+        )
+    except ModelUnavailable as exc:
+        session["error"] = (
+            f"Couldn't reach the model to suggest an outfit: {exc} "
+            f"Try again in a moment, or check your API key."
+        )
+        return session
 
     # Step 4: write the caption
-    session["fit_card"] = create_fit_card(
-        session["outfit_suggestion"], session["selected_item"]
-    )
+    try:
+        session["fit_card"] = create_fit_card(
+            session["outfit_suggestion"], session["selected_item"]
+        )
+    except ModelUnavailable as exc:
+        session["error"] = (
+            f"Couldn't reach the model to write the caption: {exc} "
+            f"Try again in a moment, or check your API key."
+        )
+        return session
 
     return session
+
   
 # ── running it directly ───────────────────────────────────────────────────────
 
