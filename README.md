@@ -197,19 +197,31 @@ Moment 2: Acceptance Criteria, the state criterion*
      or FAIL, count the passes, and read that count against your target — a
      row targeting 4 of 5 with three PASS cells is MISSED (3/5).
 
-     `python run_eval.py --label before` runs everything and writes the table
-     into results/. Paste it here and fill in the verdicts. -->
+## Run Log — Before
+
+Produced by `run_eval.py::main`, loop in `agent.py::run_agent`, tools in
+`tools.py`. 5 tries per scenario, caching off. Full output in
+`results/run_2026-10-09_1010_before.md`.
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Full three-tool run returns a fit card | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before tool 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Selected item matches fit card reference | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions price | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Price ceiling respected | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
-that produced it:
+**Real output from one try**, produced by `run_eval.py::main` →
+`agent.py::run_agent` → `tools.py::create_fit_card`:
+
+```
+Query: vintage graphic tee under $30 (example wardrobe)
+
+selected_item: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+
+Fit card: Finally found the ultimate Y2K tour bootleg tee on depop for just $24.0. The fade on this thing is unreal and it instantly gives off that effortless, lived-in grunge vibe. Can't wait to style it with baggy denim and an open hoodie!
+```
+
 
 ```
 
@@ -235,16 +247,24 @@ that produced it:
      Look for a pattern. Three misses on the same tool is one problem, not
      three. -->
 
+
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Matching query completes all three tools | 4 of 5 | MET (5/5) | All 5 tries completed every tool call and returned a non-empty fit card. Checked the trace for each try — no early stops, all 5 steps present. |
+| 2 | Impossible query stops before suggest_outfit | 5 of 5 | MET (5/5) | All 5 tries stopped after `search_listings` returned empty, with `selected_item` staying None and a specific message naming what to change (price, size, keywords). Verified via the trace's 3-step branch path. |
+| 3 | Item in session matches item passed to suggest_outfit | 5 of 5 | MET (5/5) | Checked the `selected_item` field against the fit card text for all 5 tries — same title, same price, same platform referenced every time. |
+| 4 | Fit card mentions the item's price | 4 of 5 | MET (5/5)* | Read all 5 fit cards individually — each one named the price exactly once. *See caveat below — this verdict is real but incomplete. |
+| 5 | Search results never exceed the price ceiling | 5 of 5 | MET (5/5) | Pulled raw prices directly from `search_listings` output (not the model's summary) — all 10 results across checks stayed at or under $30. |
 
 **Diagnoses**
+Nothing missed, all five criteria held at or above their targets across all five tries. Rather than fabricate a failure, here's an honest check on
+whether my targets, and my tests of them, were actually rigorous.
 
+**Criterion 4's result is real but weaker evidence than it looks.** My criterion says "for 5 **different items**." My scenario in `scenarios.py`
+ran the same item (the $24 Graphic Tee) 5 times, not 5 different ones. The criterion itself was measurable as written. I built a scenario that
+tested something narrower: repeatability on one easy, clean input (a round price, no missing fields) rather than reliability across varied items. This isn't a flaw in the criterion I'm correcting, it's a gap in my test coverage, and I'm leaving it as an honest limitation rather than dressing it up as a criterion revision, since the criterion itself didn't need fixing.
+
+**Criteria 1, 2, 3, and 5 held up as genuinely meaningful, not just easy.** Criterion 2's target had real room to fail if my branch logic had a bug, it didn't. Criterion 5's check came from raw tool output, not the model's paraphrase, so there was no room for a price to quietly slip through uncaught. Criterion 3 compares actual IDs/titles across two pipeline stages, which would have caught a real state bug if one existed. I'm confident these four were tested properly, not just set easy.
 
 
 ---
@@ -260,23 +280,6 @@ that produced it:
      one should be visibly shorter, because it stops. If your two traces are
      the same length, your branch isn't working — and this is the fastest way
      anyone will ever find that out. -->
-
-**Happy path**
-
-```
-
-```
-
-**Empty search**
-
-```
-
-```
-
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
 
 ## Loop Trace
 
@@ -313,9 +316,12 @@ $ python app.py ask "designer ballgown size XXS under $5" --trace
       out: [] (empty)
 [3] branch
       →    empty results, stopping before suggest_outfit
+```
 
-      **On the MCP move:** "search_listings"  was moved onto an MCP server ("mcp_server.py"), registered with a typed schema and a description written for a caller who can't see the implementation. "run_agent()" now calls it through "mcp_client.call_tool("search_listings", {...})" instead of importing and calling the function directly. The results coming back are identical in shape to the direct call version. same listing dicts, same fields confirming the swap didn't change behavior, only how the call is routed.
-
+**On the MCP move:** `search_listings` was moved onto an MCP server (`mcp_server.py`), registered with a typed schema and a description written
+for a caller who can't see the implementation. `run_agent()` now calls it through `mcp_client.call_tool("search_listings", {...})` instead of
+importing and calling the function directly. The results coming back are identical in shape to the direct-call version — same listing dicts, same
+fields, confirming the swap didn't change behavior, only how the call is routed.
 
 ## The Improvement
 
